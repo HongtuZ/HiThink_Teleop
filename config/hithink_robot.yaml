@@ -1,0 +1,6 @@
+left_arm:
+  type: agilex_piper
+  can_id: 0
+right_arm:
+  type: agilex_piper
+  can_id: 1
