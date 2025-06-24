@@ -1,6 +1,18 @@
+head:
+  type: null
 left_arm:
   type: agilex_piper
-  can_id: 0
+  can_id: can_left
 right_arm:
-  type: agilex_piper
-  can_id: 1
+  type: null
+  can_id: can_right
+left_hand:
+  type: null
+right_hand:
+  type: null
+torso:
+  type: null
+left_leg:
+  type: null
+right_leg:
+  type: null

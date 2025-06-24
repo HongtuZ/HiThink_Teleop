@@ -1,19 +1,20 @@
-import yaml
+from omegaconf import OmegaConf
 from typing import Dict
 from .robot_components import RobotComponents
+import numpy as np
 
 class HumanoidRobot:
 
     def __init__(self, config_path):
-        config = yaml.safe_load(open(config_path), 'r')
-        self.head = RobotComponents[config.head.type]() if config.head else None
-        self.left_arm = RobotComponents[config.left_arm.type](can_id=config.left_arm.can_id, is_left=True) if config.left_arm else None
-        self.right_arm = RobotComponents[config.right_arm.type](can_id=config.right_arm.can_id, is_left=False) if config.right_arm else None
-        self.left_hand = RobotComponents[config.left_hand.type]() if config.left_hand else None
-        self.right_hand = RobotComponents[config.right_hand.type]() if config.right_hand else None
-        self.left_leg = RobotComponents[config.left_leg.type]() if config.left_leg else None
-        self.right_leg = RobotComponents[config.right_leg.type]() if config.right_leg else None
-        self.torso = RobotComponents[config.torso.type]() if config.torso else None
+        config = OmegaConf.load(config_path)
+        self.head = RobotComponents[config.head.type]()
+        self.left_arm = RobotComponents[config.left_arm.type](can_id=config.left_arm.can_id, is_left=True)
+        self.right_arm = RobotComponents[config.right_arm.type](can_id=config.right_arm.can_id, is_left=False)
+        self.left_hand = RobotComponents[config.left_hand.type]()
+        self.right_hand = RobotComponents[config.right_hand.type]()
+        self.left_leg = RobotComponents[config.left_leg.type]()
+        self.right_leg = RobotComponents[config.right_leg.type]()
+        self.torso = RobotComponents[config.torso.type]()
 
     def step(self, control_cmd: Dict):
         """
@@ -36,3 +37,28 @@ class HumanoidRobot:
             self.right_leg.step(control_cmd['right_leg'])
         if self.torso and 'torso' in control_cmd:
             self.torso.step(control_cmd['torso'])
+
+    @property
+    def state(self):
+        """
+        Get the current state of the robot.
+        :return: A dictionary containing the state of each body part.
+        """
+        state = {}
+        if self.head:
+            state['head'] = self.head.state
+        if self.left_arm:
+            state['left_arm'] = self.left_arm.state
+        if self.right_arm:
+            state['right_arm'] = self.right_arm.state
+        if self.left_hand:
+            state['left_hand'] = self.left_hand.state
+        if self.right_hand:
+            state['right_hand'] = self.right_hand.state
+        if self.left_leg:
+            state['left_leg'] = self.left_leg.state
+        if self.right_leg:
+            state['right_leg'] = self.right_leg.state
+        if self.torso:
+            state['torso'] = self.torso.state
+        return state
