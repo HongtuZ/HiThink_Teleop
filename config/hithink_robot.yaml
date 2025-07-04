@@ -1,10 +1,10 @@
 head:
   type: null
 left_arm:
-  type: agilex_piper
+  type: null # agilex_piper
   can_id: can_left
 right_arm:
-  type: null
+  type: agilex_piper
   can_id: can_right
 left_hand:
   type: null
