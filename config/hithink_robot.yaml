@@ -1,18 +1,56 @@
+# ------------------------------------------------------------------
+#                 Head configuration
+# ------------------------------------------------------------------
 head:
   type: null
+  config: null
+
+# ------------------------------------------------------------------
+#                 Arm configuration
+# ------------------------------------------------------------------
 left_arm:
   type: null # agilex_piper
-  can_id: can_left
+  config:
+    can_id: can_left
+    urdf_path: /home/robot/hongtu/HiThink_Teleop/assets/urdf/piper_arm/piper_description.urdf
+    ee_name: gripper_base # ee link name in urdf
+    ik_dt: 0.1
+    ik_damping: 0.01
+    ik_eps: 0.0001
+
 right_arm:
   type: agilex_piper
-  can_id: can_right
+  config:
+    can_id: can_right
+    urdf_path: /home/robot/hongtu/HiThink_Teleop/assets/urdf/piper_arm/piper_description.urdf
+    ee_name: gripper_base
+    ik_dt: 0.1
+    ik_damping: 0.01
+    ik_eps: 0.0001
+
+# ------------------------------------------------------------------
+#                 Hand configuration
+# ------------------------------------------------------------------
 left_hand:
   type: null
+  config: null
 right_hand:
   type: null
+  config: null
+
+# ------------------------------------------------------------------
+#                 Torso configuration
+# ------------------------------------------------------------------
 torso:
   type: null
+  config: null
+
+# ------------------------------------------------------------------
+#                 Leg configuration
+# ------------------------------------------------------------------
 left_leg:
   type: null
+  config: null
 right_leg:
   type: null
+  config: null

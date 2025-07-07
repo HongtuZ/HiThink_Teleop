@@ -1,20 +1,19 @@
-from robot.humanoid_robot import HumanoidRobot
-from pprint import pprint
+# from robot.humanoid_robot import HumanoidRobot
 import time
+import numpy as np
+from pprint import pprint
+from robot.robot_components.motion_controller.pinocchio_motion_control import PinocchioMotionControl
 
 if __name__ == "__main__":
-    robot = HumanoidRobot(config_path='./config/hithink_robot.yaml')
-    while True:
-        print(robot.state)
-        time.sleep(1)
-        # robot.go_default()
-        # robot.go_zero()
-        # robot.go_default()
-    # start_time = time.perf_counter()
-    # start_ee_pose = robot.right_arm.ee_pose
+    # robot = HumanoidRobot(config_path='./config/hithink_robot.yaml')
     # while True:
-    #     duration_time = time.perf_counter() - start_time
-    #     z = duration_time * 0.0001
-    #     target_ee_pose = start_ee_pose
-    #     target_ee_pose[2] += z
-    #     robot.right_arm.step(target_ee_pose)
+    #     print(robot.state)
+    #     time.sleep(1)
+    pin_controller = PinocchioMotionControl(
+        urdf_path='/home/robot/hongtu/HiThink_Teleop/assets/urdf/piper_arm/piper_description.urdf',
+        ee_name='gripper_base',
+        ik_dt=0.1,
+        ik_damping=0.01,
+        ik_eps=1e-3,
+    )
+    pin_controller.step(pos=np.array([0.3, 0.0, 0.3]), quat=np.array([1, 0, 0, 0]), repeat=1)

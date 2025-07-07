@@ -9,8 +9,8 @@ class HumanoidRobot:
     def __init__(self, config_path):
         config = OmegaConf.load(config_path)
         self.head = RobotComponents[config.head.type](name='head')
-        self.left_arm = RobotComponents[config.left_arm.type](name='left_arm', can_id=config.left_arm.can_id, is_left=True)
-        self.right_arm = RobotComponents[config.right_arm.type](name='right_arm', can_id=config.right_arm.can_id, is_left=False)
+        self.left_arm = RobotComponents[config.left_arm.type](name='left_arm', config=config.config)
+        self.right_arm = RobotComponents[config.right_arm.type](name='right_arm', config=config.config)
         self.left_hand = RobotComponents[config.left_hand.type](name='left_hand')
         self.right_hand = RobotComponents[config.right_hand.type](name='right_hand')
         self.left_leg = RobotComponents[config.left_leg.type](name='left_leg')

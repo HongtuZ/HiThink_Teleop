@@ -1,6 +1,7 @@
 import time
 import numpy as np
 from piper_sdk import *
+from .motion_controller.pinocchio_motion_control import PinocchioMotionControl
 
 ArmState = {
             0x00: '正常',
@@ -58,13 +59,19 @@ ModeFbk = {
 
 class AgilexPiper:
     
-    def __init__(self, name, can_id, is_left=False):
+    def __init__(self, name, config):
         self.name = name
-        self.can_id = can_id
-        self.piper = C_PiperInterface_V2(can_id)
+        self.can_id = config.can_id
+        self.piper = C_PiperInterface_V2(self.can_id)
         self.init()
-        self.default_pose = [0, 0, 0 ,0, 0, 0, 0.08] if is_left else [0, 0, 0 ,0, 0, 0, 0.08]
         self.init_ee_pose = self.ee_pose
+        self.motion_controller = PinocchioMotionControl(
+            urdf_path=config.urdf_path,
+            ee_name=config.ee_name,
+            ik_dt=config.ik_dt,
+            ik_damping=config.ik_damping,
+            ik_eps=config.ik_eps,
+        )
 
     def init(self):
         self.piper.ConnectPort()
@@ -79,20 +86,17 @@ class AgilexPiper:
             exit(1)
 
     def step(self, cmd):
-        # cmd: [X, Y, Z, RX, RY, RZ, gripper]: Delta x y z
-        # unit: X,Y,Z: m, RX,RY,RZ: degree, gripper: (0, 1)
+        # cmd: [x, y, z, quat_w, quat_x, quat_y, quat_z, gripper]
         if cmd is None:
             return
-        print('----------------------------------------------------')
-        print(f'cur ee pose:', [f'{v:.2f}' for v in self.ee_pose])
-        print(f"input {self.name} cmd:", [f'{v:.2f}' for v in cmd])
         cmd[:3] += self.init_ee_pose[:3]
-        print(f"after {self.name} cmd:", [f'{v:.2f}' for v in cmd])
+
+        self.motion_controller.set_current_qpos(self.joints)
+        target_joints = self.motion_controller.step(pos=cmd[:3], quat=cmd[3:7])
         gripper_range = (np.clip(cmd[-1], 0, 1)*1e5).astype(int)
-        x, y, z = cmd[:3]*1e6 # m -> 0.001mm
-        rx, ry, rz = cmd[3:6]*1e3 # degree -> 0.001degree
-        self.piper.ModeCtrl(0x01, 0x00, 100, 0x00)
-        self.piper.EndPoseCtrl(round(x), round(y), round(z), round(rx), round(ry), round(rz))
+
+        self.piper.ModeCtrl(0x01, 0x01, 100, 0x00)
+        self.piper.JointCtrl(*target_joints)
         self.piper.GripperCtrl(gripper_range, 1000, 0x03, 0)
         print(f'{self.name} res: {ArmState[self.piper.GetArmStatus().arm_status.arm_status]}')
 
@@ -134,7 +138,7 @@ class AgilexPiper:
         status = f'机械臂状态: {ArmState[arm_status.arm_status]} 控制模式: {CtrlMode[arm_status.ctrl_mode]} {ModeFbk[arm_status.mode_feed]} 运动状态: {MotionMode[arm_status.motion_status]} 示教状态: {TeachMode[arm_status.teach_status]}' 
         return {
             'Status': status,
-            # 'Joints': str(self.piper.GetArmJointMsgs()),
+            'Joints': self.joints,
             # 'Gripper': str(self.piper.GetArmGripperMsgs()),
             'EndPose': self.ee_pose,
         }
@@ -148,5 +152,11 @@ class AgilexPiper:
         griper_range = self.piper.GetArmGripperMsgs().gripper_state.grippers_angle * 1e-5 # -> (0,1)
         ee_pose = self.piper.GetArmEndPoseMsgs().end_pose
         ee_xyz = np.array([ee_pose.X_axis, ee_pose.Y_axis, ee_pose.Z_axis], dtype=float)*1e-6 # 0.001mm -> m
-        ee_rxyz = np.array([ee_pose.RX_axis, ee_pose.RY_axis, ee_pose.RZ_axis], dtype=float)*1e-3 # 0.001degree -> degree
+        ee_rxyz = np.array([ee_pose.RX_axis, ee_pose.RY_axis, ee_pose.RZ_axis], dtype=float)*1e-3 / 180 * np.pi # 0.001degree -> radian
         return np.concatenate([ee_xyz, ee_rxyz, [griper_range]], axis=0)
+
+    @property
+    def joints(self):
+        # Get the joint angles in radians
+        joint_msgs = self.piper.GetArmJointMsgs().joint_state
+        return np.array([joint_msgs.joint1, joint_msgs.joint2, joint_msgs.joint3, joint_msgs.joint4, joint_msgs.joint5, joint_msgs.joint6], dtype=float) * 1e-3 / 180 * np.pi

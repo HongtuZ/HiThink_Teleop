@@ -1,5 +1,4 @@
 from threading import Lock
-from pathlib import Path
 from typing import List, Optional, Dict
 
 import numpy as np
@@ -9,21 +8,22 @@ import yaml
 class PinocchioMotionControl():
     def __init__(
         self,
-        robot_name: str,
-        robot_config: dict,
+        urdf_path: str,
+        ee_name: str,
+        ik_dt: float,
+        ik_damping: float,
+        ik_eps: float,
     ):
-        self.robot_name = robot_name
         self._qpos_lock = Lock()
 
         # Config
-        self.dt = float(robot_config["dt"])
-        self.ik_damping = float(robot_config["ik_damping"]) * np.eye(6)
-        self.ik_eps = float(robot_config["eps"])
-        self.ee_name = robot_config["ee_link"]
+        self.ee_name = ee_name
+        self.dt = ik_dt
+        self.ik_damping = ik_damping * np.eye(6)
+        self.ik_eps = ik_eps
 
         # Build robot
-        urdf_path = robot_config['urdf_path']
-        self.model: pin.Model = pin.buildModelFromUrdf(str(urdf_path))
+        self.model: pin.Model = pin.buildModelFromUrdf(urdf_path)
         self.data: pin.Data = self.model.createData()
         frame_mapping: Dict[str, int] = {}
 
@@ -63,7 +63,8 @@ class PinocchioMotionControl():
             v = J.T.dot(np.linalg.solve(J.dot(J.T) + self.ik_damping, err))
             qpos = pin.integrate(self.model, qpos, v * self.dt)
 
-        self.set_current_qpos(qpos)
+        # self.set_current_qpos(qpos) # done outside
+        return qpos
 
     def compute_ee_pose(self, qpos: np.ndarray) -> np.ndarray:
         pin.forwardKinematics(self.model, self.data, qpos)
