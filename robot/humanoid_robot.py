@@ -6,11 +6,10 @@ import time
 
 class HumanoidRobot:
 
-    def __init__(self, config_path):
-        config = OmegaConf.load(config_path)
+    def __init__(self, config):
         self.head = RobotComponents[config.head.type](name='head')
-        self.left_arm = RobotComponents[config.left_arm.type](name='left_arm', config=config.config)
-        self.right_arm = RobotComponents[config.right_arm.type](name='right_arm', config=config.config)
+        self.left_arm = RobotComponents[config.left_arm.type](name='left_arm', config=config.left_arm.config)
+        self.right_arm = RobotComponents[config.right_arm.type](name='right_arm', config=config.right_arm.config)
         self.left_hand = RobotComponents[config.left_hand.type](name='left_hand')
         self.right_hand = RobotComponents[config.right_hand.type](name='right_hand')
         self.left_leg = RobotComponents[config.left_leg.type](name='left_leg')
@@ -56,9 +55,9 @@ class HumanoidRobot:
     def go_default(self):
         for name, c in self.components.items():
             c.go_default()
-        print('Waiting robot go default ...')
         time.sleep(0.1)
         while not all([c.done for c in self.components.values()]):
+            print('Waiting robot go default ...')
             time.sleep(0.1)
 
 

@@ -37,6 +37,9 @@ class PinocchioMotionControl():
         self.frame_mapping = frame_mapping
         self.ee_frame_id = frame_mapping[self.ee_name]
 
+        self.lower_limit = self.model.lowerPositionLimit
+        self.upper_limit = self.model.upperPositionLimit
+
         # Current state
         self.qpos = pin.neutral(self.model)
         pin.forwardKinematics(self.model, self.data, self.qpos)
@@ -44,39 +47,39 @@ class PinocchioMotionControl():
             self.model, self.data, self.ee_frame_id
         )
 
-    def step(self, pos: Optional[np.ndarray], quat: Optional[np.ndarray], repeat=1):
-        xyzw = np.array([quat[1], quat[2], quat[3], quat[0]])
-        pose_vec = np.concatenate([pos, xyzw])
-        oMdes = pin.XYZQUATToSE3(pose_vec)
+    def step(self, pose: Optional[np.ndarray], repeat=1):
+        oMdes = pin.XYZQUATToSE3(pose)
         with self._qpos_lock:
             qpos = self.qpos.copy()
 
+        success = False
         for k in range(100 * repeat):
             pin.forwardKinematics(self.model, self.data, qpos)
             ee_pose = pin.updateFramePlacement(self.model, self.data, self.ee_frame_id)
-            J = pin.computeFrameJacobian(self.model, self.data, qpos, self.ee_frame_id)
             iMd = ee_pose.actInv(oMdes)
             err = pin.log(iMd).vector
             if np.linalg.norm(err) < self.ik_eps:
+                success = True
                 break
 
-            v = J.T.dot(np.linalg.solve(J.dot(J.T) + self.ik_damping, err))
+            J = pin.computeFrameJacobian(self.model, self.data, qpos, self.ee_frame_id)
+            J = -np.dot(pin.Jlog6(iMd.inverse()), J)
+
+            v = -J.T.dot(np.linalg.solve(J.dot(J.T) + self.ik_damping*np.eye(6), err))
             qpos = pin.integrate(self.model, qpos, v * self.dt)
 
+        success = np.all(qpos >= self.lower_limit) and np.all(qpos <= self.upper_limit)
+        qpos = np.clip(qpos, self.lower_limit, self.upper_limit)
+        print('-----------------')
+        print(self.ee_name, ' IK:', success, ' err:', np.linalg.norm(err))
         # self.set_current_qpos(qpos) # done outside
-        return qpos
+        return success, qpos
 
     def compute_ee_pose(self, qpos: np.ndarray) -> np.ndarray:
         pin.forwardKinematics(self.model, self.data, qpos)
         oMf: pin.SE3 = pin.updateFramePlacement(self.model, self.data, self.ee_frame_id)
         xyzw_pose = pin.SE3ToXYZQUAT(oMf)
-
-        return np.concatenate(
-            [
-                xyzw_pose[:3],
-                np.array([xyzw_pose[6], xyzw_pose[3], xyzw_pose[4], xyzw_pose[5]]),
-            ]
-        )
+        return xyzw_pose
 
     def get_current_qpos(self) -> np.ndarray:
         with self._qpos_lock:

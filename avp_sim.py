@@ -2,8 +2,7 @@ import common.helper as helper
 
 from pathlib import Path
 from avp_stream import VisionProStreamer as AVPStreamer
-from robot.humanoid_robot import HumanoidRobot
-# from teleop_sim import Sim
+from teleop_sim import Sim
 from omegaconf import OmegaConf
 
 def avp_data2hithink_robot_cmd(avp_data):
@@ -21,13 +20,10 @@ def avp_data2hithink_robot_cmd(avp_data):
 def avp_teleop(config_path:str):
     config = OmegaConf.load(config_path)
     streamer = AVPStreamer(ip=config.avp.ip, record=False)
-    hithink_robot = HumanoidRobot(config)
-    hithink_robot.go_default()
-    # sim = Sim(config.left_arm.config)
+    sim = Sim(config.left_arm.config)
     while True:
         avp_data = streamer.get_latest()
-        hithink_robot.step(avp_data2hithink_robot_cmd(avp_data))
-        # sim.step(avp_data2hithink_robot_cmd(avp_data))
+        sim.step(avp_data2hithink_robot_cmd(avp_data))
 
 if __name__ == '__main__':
     config_path = Path(__file__).parent/'config/hithink_robot.yaml'

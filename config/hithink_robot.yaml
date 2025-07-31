@@ -1,4 +1,10 @@
 # ------------------------------------------------------------------
+#                 Apple VisionPro configuration
+# ------------------------------------------------------------------
+avp:
+  ip: 192.168.31.90
+
+# ------------------------------------------------------------------
 #                 Head configuration
 # ------------------------------------------------------------------
 head:
@@ -9,24 +15,24 @@ head:
 #                 Arm configuration
 # ------------------------------------------------------------------
 left_arm:
-  type: null # agilex_piper
+  type: agilex_piper
   config:
     can_id: can_left
     urdf_path: /home/robot/hongtu/HiThink_Teleop/assets/urdf/piper_arm/piper_description.urdf
-    ee_name: gripper_base # ee link name in urdf
+    ee_name: hithink_ee # ee link name in urdf
     ik_dt: 0.1
     ik_damping: 0.01
-    ik_eps: 0.0001
+    ik_eps: 0.001
 
 right_arm:
   type: agilex_piper
   config:
     can_id: can_right
     urdf_path: /home/robot/hongtu/HiThink_Teleop/assets/urdf/piper_arm/piper_description.urdf
-    ee_name: gripper_base
+    ee_name: hithink_ee
     ik_dt: 0.1
     ik_damping: 0.01
-    ik_eps: 0.0001
+    ik_eps: 0.001
 
 # ------------------------------------------------------------------
 #                 Hand configuration
